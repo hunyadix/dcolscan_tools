@@ -1,0 +1,89 @@
+# Official Twiki page you can check for latest info:
+
+
+# This file explains how to download and create a text file with
+# the offical instlumi/pileup values for 2015 Data ordered by Run, Ls
+
+
+
+#_____________________________________________________________
+#                         PILEUP Histo
+#                    ( For PU reweighting )
+
+# Checkout - do onyl first time
+# https://twiki.cern.ch/twiki/bin/view/CMS/PileupJSONFileforData#2015_Pileup_JSON_Files
+setenv SCRAM_ARCH slc6_amd64_gcc491
+cmsrel CMSSW_7_4_15_patch1
+cd CMSSW_7_4_15_patch1/src
+cmsenv
+git cms-addpkg RecoLuminosity/LumiDB
+ln -s /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions15/13TeV CERT15
+scram b -j 20
+
+# generate pileup distribution
+# 2015 - 25ns - Dec18 Silver JSON
+mkdir Dec18_Silver_JSON
+RecoLuminosity/LumiDB/scripts/pileupCalc.py -i CERT15/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_Silver_v2.txt --inputLumiJSON CERT15/PileUp/pileup_JSON_11-19-2015.txt --calcMode true --minBiasXsec 69000 --maxPileupBin 100 --numPileupBins 100 Dec18_Silver_JSON/data_pileup.root
+RecoLuminosity/LumiDB/scripts/pileupCalc.py -i CERT15/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_Silver.txt --inputLumiJSON CERT15/PileUp/pileup_JSON_11-19-2015.txt --calcMode true --minBiasXsec 72450 --maxPileupBin 100 --numPileupBins 100 Dec18_Silver_JSON/data_pileup_down.root
+RecoLuminosity/LumiDB/scripts/pileupCalc.py -i CERT15/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_Silver.txt --inputLumiJSON CERT15/PileUp/pileup_JSON_11-19-2015.txt --calcMode true --minBiasXsec 65550 --maxPileupBin 100 --numPileupBins 100 Dec18_Silver_JSON/data_pileup_up.root
+
+mkdir Nov13_Silver_JSON
+RecoLuminosity/LumiDB/scripts/pileupCalc.py -i CERT15/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_Silver.txt --inputLumiJSON CERT15/PileUp/pileup_JSON_11-19-2015.txt --calcMode true --minBiasXsec 69000 --maxPileupBin 100 --numPileupBins 100 Nov13_Silver_JSON/data_pileup.root
+# increase cross-section by 5% (pileup goes down)
+RecoLuminosity/LumiDB/scripts/pileupCalc.py -i CERT15/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_Silver.txt --inputLumiJSON CERT15/PileUp/pileup_JSON_11-19-2015.txt --calcMode true --minBiasXsec 72450 --maxPileupBin 100 --numPileupBins 100 Nov13_Silver_JSON/data_pileup_down.root
+# decrease cross-section by 5% (pileup goes up)
+RecoLuminosity/LumiDB/scripts/pileupCalc.py -i CERT15/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_Silver.txt --inputLumiJSON CERT15/PileUp/pileup_JSON_11-19-2015.txt --calcMode true --minBiasXsec 65550 --maxPileupBin 100 --numPileupBins 100 Nov13_Silver_JSON/data_pileup_up.root
+
+# 2232b Fills
+RecoLuminosity/LumiDB/scripts/pileupCalc.py -i Cert_Nov13_Silver_JSON_2232b_Fills.txt --inputLumiJSON CERT15/PileUp/pileup_JSON_11-19-2015.txt --calcMode true --minBiasXsec 69000 --maxPileupBin 100 --numPileupBins 100 Nov13_Silver_JSON/pileup_data_2232b_69mb.root
+
+RecoLuminosity/LumiDB/scripts/pileupCalc.py -i Cert_Nov13_Silver_JSON_2232b_Fills.txt --inputLumiJSON CERT15/PileUp/pileup_JSON_11-19-2015.txt --calcMode true --minBiasXsec 80000 --maxPileupBin 100 --numPileupBins 100 Nov13_Silver_JSON/pileup_data_2232b_80mb.root
+
+
+#_____________________________________________________________
+#                       Tot Int. Lumi
+#                  ( For MC Normalization )
+
+# brilcalc on lxplus
+# http://cms-service-lumi.web.cern.ch/cms-service-lumi/brilwsdoc.html
+# install
+lxplus
+setup_bril
+pip install --install-option="--prefix=$HOME/.local" brilws
+
+# use (for total int lumi)
+lxplus
+setup_bril
+brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/normtag_file/moriond16_normtag.json -i CERT15/Reprocessing/Cert_13TeV_16Dec2015ReReco_Collisions15_25ns_JSON_Silver.txt
+
+Golden:   2318.35 pb^-1
+Silver:   2690.71 pb^-1
+MuonPhys: 2832.67 pb^-1
+
+!! Latest !!
+# new - February
+- 2.7%
+
+# old - December
+https://indico.cern.ch/event/463929/session/4/contribution/90/attachments/1202469/1750991/LUMPOG_20151209_update.pdf
+Uncertainties:
+- 4.8 % for 50 ns
+- 4.6 % for 25 ns
+!!!!
+
+#_____________________________________________________________
+#                 RUN, LS, InstLumi, Pileup
+#                     ( For plotting )
+
+# lumi by ls for txt file
+# Warning: avg pileup incorrect with normtag
+brilcalc lumi --byls -u /nb -i CERT15/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_Silver_v2.txt | grep "STABLE BEAMS" | sed "s;:; ;g;" | awk '{ printf "%d %d %f %f\n", $2, $5, $18, $22 }' >! run_ls_il_pu_Dec18_Silver_JSON.txt
+brilcalc lumi --byls -u /nb -i CERT15/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_Silver_v2.txt | grep "STABLE BEAMS" | sed "s;:; ;g;" | awk '{ printf "%d %d %f %f\n", $2, $5, $18, $22 }' >! run_ls_instlumi_pileup_2015.txt
+brilcalc lumi --byls -u /nb -i CERT15/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_Silver.txt | grep "STABLE BEAMS" | sed "s;:; ;g;" | awk '{ printf "%d %d %f %f\n", $2, $5, $18, $22 }' >! run_ls_instlumi_pileup_2015.txt
+brilcalc lumi --byls -u /nb -i CERT15/Cert_246908-259891_13TeV_PromptReco_Collisions15_25ns_JSON_Silver.txt | grep "STABLE BEAMS" | sed "s;:; ;g;" | awk '{ printf "%d %d %f %f\n", $2, $5, $18, $22 }' >! run_ls_il_pu_Nov03_Silver_JSON.txt
+
+# For TimingStudy/PHM
+brilcalc lumi --byls -u /nb --begin 3819 --end 4647 | tail -n+3 | head -n-7 | sed "s;:; ;g;" | awk '{ printf "%d %d %f %f\n", $2, $5, $18, $22 }' > ! run_ls_instlumi_pileup_2015.txt
+
+# sum lumi up to run
+brilcalc lumi --byls -u /nb --begin 3819 --end 4647 | tail -n+3 | head -n-7 | sed "s;:; ;g;" | awk '{ run=$2 }{ if (prev_run!=run) printf "%d %lf\n", prev_run, intlumi_invnb/1000000.0 }{ prev_run=run; intlumi_invnb += $18;}'
